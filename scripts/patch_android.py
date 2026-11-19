@@ -46,3 +46,14 @@ d.mkdir(parents=True, exist_ok=True)
 )
 print("patched manifest + banner")
 print(mf.read_text(encoding="utf-8"))
+
+# ---- MainActivity مخصص لالتقاط يد التحكم والريموت ----
+import glob
+acts = glob.glob("android/app/src/main/java/**/MainActivity.java", recursive=True)
+assert acts, "MainActivity.java not found"
+orig = pathlib.Path(acts[0]).read_text(encoding="utf-8")
+pkg = re.search(r"^package\s+([\w.]+);", orig, re.M).group(1)
+tpl = pathlib.Path("native/MainActivity.java").read_text(encoding="utf-8")
+tpl = re.sub(r"^package\s+[\w.]+;", "package " + pkg + ";", tpl, count=1, flags=re.M)
+pathlib.Path(acts[0]).write_text(tpl, encoding="utf-8")
+print("replaced", acts[0])

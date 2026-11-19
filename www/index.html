@@ -25,6 +25,7 @@ canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;background:#000;imag
 #menu li.sel{border-color:#c9a35a;background:rgba(120,70,20,.35);color:#fff}
 #menu li b{font-weight:400;color:#e8c04a}
 #foot{position:absolute;bottom:3vh;font-size:2.4vh;color:#8d7f5f}
+#menu ul.dense li{font-size:3.1vh;padding:.6vh 3vw;margin:.4vh 0}
 #flash{position:fixed;inset:0;background:#a00;opacity:0;pointer-events:none}
 </style>
 </head>
@@ -48,7 +49,7 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 function mkRng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 /* ---------- الإعدادات ---------- */
-const S0={vol:8,gfx:1,sens:10,dz:15,bob:1,rumble:1};
+const S0={vol:8,gfx:1,sens:10,sensY:10,inv:0,dz:12,fov:66,bob:1,rumble:1,infStam:1};
 const S=Object.assign({},S0);
 try{Object.assign(S,JSON.parse(localStorage.getItem('layalina_s')||'{}'))}catch(e){}
 function saveS(){try{localStorage.setItem('layalina_s',JSON.stringify(S))}catch(e){}}
@@ -57,7 +58,7 @@ function saveS(){try{localStorage.setItem('layalina_s',JSON.stringify(S))}catch(
 let W=480,H=270,skyCv,floorGrad,vig;
 const GFXW=[320,480,640,960];
 function setRes(){
-  W=GFXW[clamp(S.gfx|0,0,3)];H=Math.round(W*9/16);
+  applyFov();W=GFXW[clamp(S.gfx|0,0,3)];H=Math.round(W*9/16);
   cv.width=W;cv.height=H;
   buildSky();
   floorGrad=ctx.createLinearGradient(0,H/2,0,H);
@@ -68,7 +69,7 @@ function setRes(){
   rg.addColorStop(0,'rgba(0,0,0,0)');rg.addColorStop(1,'rgba(0,0,0,.85)');
   g.fillStyle=rg;g.fillRect(0,0,W,H);
 }
-const FOV_PLANE=0.66;
+let FOV_PLANE=0.66;function applyFov(){FOV_PLANE=Math.tan((S.fov||66)*Math.PI/360)}
 function buildSky(){
   const fov=2*Math.atan(FOV_PLANE);
   const sw=Math.round(W*TAU/fov);
@@ -122,7 +123,7 @@ function noise(d,f,v,type,pan,delay,q){
   s.connect(fl);fl.connect(g);g.connect(outN(pan));s.start(t,Math.random());s.stop(t+d+.05);
 }
 const SFX={
-  step(){noise(.1,500+Math.random()*300,.16,'lowpass');tone(70,.08,'sine',.1)},
+  step(v){v=v||1;noise(.1,500+Math.random()*300,.16*v,'lowpass');tone(70,.08,'sine',.1*v)},
   heart(v){tone(58,.16,'sine',v,40);tone(52,.2,'sine',v*.8,38,0,.2)},
   growl(p,v){tone(75,1.1,'sawtooth',v*.35,42,p);noise(1.1,320,v*.5,'lowpass',p)},
   screech(){tone(950,.9,'sawtooth',.35,180);noise(.9,2200,.5,'highpass');tone(60,1,'sine',.5,30)},
@@ -137,10 +138,14 @@ const SFX={
   win(){[523,659,784,1047].forEach((f,i)=>tone(f,.8,'sine',.15,null,0,i*.18))}
 };
 
-/* ---------- الإدخال: يد التحكم + لوحة المفاتيح + ريموت التلفاز ---------- */
-const keys={};
-addEventListener('keydown',e=>{keys[e.code]=1;if(/^(Arrow|Space|Enter|Backspace)/.test(e.code))e.preventDefault();ensureAudio()});
-addEventListener('keyup',e=>{keys[e.code]=0});
+/* ---------- الإدخال: Android الأصلي + Gamepad API + لوحة المفاتيح + الريموت ---------- */
+const keys={};const NB={};const NA={x:0,y:0,z:0,rz:0,rx:0,ry:0,lt:0,rt:0,hx:0,hy:0};
+let lastIn='',hasNative=false;
+addEventListener('keydown',e=>{keys[e.code]=1;keys['k'+e.keyCode]=1;if(e.key)keys[e.key]=1;lastIn='لوحة/ريموت: '+(e.key||e.code);
+  if(/^(Arrow|Space|Enter|Backspace)/.test(e.code)||/^(Arrow|Enter)/.test(e.key||''))e.preventDefault();ensureAudio()});
+addEventListener('keyup',e=>{keys[e.code]=0;keys['k'+e.keyCode]=0;if(e.key)keys[e.key]=0});
+window.__nk=(c,d)=>{hasNative=true;NB[c]=d?1:0;if(d)lastIn='زر رقم '+c;ensureAudio()};
+window.__na=(x,y,z,rz,rx,ry,lt,rt,hx,hy)=>{hasNative=true;NA.x=x;NA.y=y;NA.z=z;NA.rz=rz;NA.rx=rx;NA.ry=ry;NA.lt=lt;NA.rt=rt;NA.hx=hx;NA.hy=hy};
 addEventListener('pointerdown',ensureAudio);
 addEventListener('gamepadconnected',ensureAudio);
 const held={},hold={};
@@ -151,33 +156,42 @@ function edge(n,on,dt,rep){
   return false;
 }
 let gpad=null;
-const I={mx:0,my:0,lx:0,sprint:0,up:0,down:0,left:0,right:0,ok:0,back:0,start:0,flash:0,anyBtn:0};
+const I={mx:0,my:0,lx:0,ly:0,sprint:0,up:0,down:0,left:0,right:0,ok:0,back:0,backKey:0,b:0,start:0,flash:0,anyBtn:0};
 function getPad(){
   const pads=navigator.getGamepads?navigator.getGamepads():[];
   for(let i=0;i<pads.length;i++){const p=pads[i];if(p&&p.connected)return p}
   return null;
 }
+function stick(x,y,dz){const m=Math.hypot(x,y);if(m<=dz)return[0,0];const s=Math.min(1,(m-dz)/(1-dz))/m;return[x*s,y*s]}
+const B=v=>v?1:0;
 function poll(dt){
   const gp=gpad=getPad();const dz=S.dz/100;
-  const ax=i=>{const v=gp&&gp.axes[i]||0;return Math.abs(v)<dz?0:v};
-  const b=i=>gp&&gp.buttons[i]&&gp.buttons[i].pressed?1:0;
-  const k=c=>keys[c]?1:0;
-  const ax0=ax(0),ay0=ax(1);
-  I.mx=clamp(ax0+k('KeyD')-k('KeyA'),-1,1);
-  I.my=clamp(ay0+k('KeyS')-k('KeyW')+k('ArrowDown')-k('ArrowUp')+b(13)-b(12),-1,1);
-  I.lx=clamp(ax(2)+k('ArrowRight')*.8-k('ArrowLeft')*.8+(b(15)-b(14))*.8+k('KeyE')*.8-k('KeyQ')*.8,-1,1);
-  I.sprint=b(7)||b(6)||b(10)||b(5)||b(4)||k('ShiftLeft')?1:0;
-  const mup=ay0<-.6||b(12)||k('ArrowUp')||k('KeyW');
-  const mdn=ay0>.6||b(13)||k('ArrowDown')||k('KeyS');
-  const mlf=ax0<-.6||b(14)||k('ArrowLeft')||k('KeyA');
-  const mrt=ax0>.6||b(15)||k('ArrowRight')||k('KeyD');
+  const k=c=>B(keys[c]),n=c=>B(NB[c]);
+  const gb=i=>B(gp&&gp.buttons[i]&&gp.buttons[i].pressed);
+  const ga=i=>gp&&gp.axes[i]||0;
+  const rawLX=NA.x||ga(0),rawLY=NA.y||ga(1);
+  let rawRX=NA.z||ga(2),rawRY=NA.rz||ga(3);
+  if(Math.abs(NA.rx)+Math.abs(NA.ry)>Math.abs(NA.z)+Math.abs(NA.rz)){rawRX=NA.rx;rawRY=NA.ry}
+  const Ls=stick(rawLX,rawLY,dz),Rs=stick(rawRX,rawRY,dz);
+  const dpU=B(n(19)||gb(12)||NA.hy<-.5),dpD=B(n(20)||gb(13)||NA.hy>.5),dpL=B(n(21)||gb(14)||NA.hx<-.5),dpR=B(n(22)||gb(15)||NA.hx>.5);
+  I.mx=clamp(Ls[0]+k('KeyD')-k('KeyA'),-1,1);
+  I.my=clamp(Ls[1]+k('KeyS')-k('KeyW')+dpD-dpU+k('ArrowDown')-k('ArrowUp'),-1,1);
+  I.lx=clamp(Rs[0]+(dpR-dpL)*.8+(k('ArrowRight')-k('ArrowLeft'))*.8+(k('KeyE')-k('KeyQ'))*.8,-1,1);
+  I.ly=clamp(Rs[1],-1,1);
+  I.sprint=B(n(104)||n(105)||n(106)||n(102)||n(103)||gb(4)||gb(5)||gb(6)||gb(7)||gb(10)||NA.lt>.4||NA.rt>.4||k('ShiftLeft'));
+  const mup=rawLY<-.6||dpU||k('ArrowUp')||k('KeyW');
+  const mdn=rawLY>.6||dpD||k('ArrowDown')||k('KeyS');
+  const mlf=rawLX<-.6||dpL||k('ArrowLeft')||k('KeyA');
+  const mrt=rawLX>.6||dpR||k('ArrowRight')||k('KeyD');
   I.up=edge('u',mup,dt,1);I.down=edge('d',mdn,dt,1);I.left=edge('l',mlf,dt,1);I.right=edge('r',mrt,dt,1);
-  I.ok=edge('ok',b(0)||k('Enter')||k('Space'),dt,0);
-  I.back=edge('bk',b(1)||k('Escape')||k('Backspace'),dt,0);
-  I.start=edge('st',b(9)||b(8)||k('Escape')||k('KeyP'),dt,0);
-  I.flash=edge('fl',b(2)||b(3)||k('KeyF'),dt,0);
+  I.ok=edge('ok',n(96)||n(23)||n(66)||n(160)||gb(0)||k('Enter')||k('Space'),dt,0);
+  I.b=edge('b',n(97)||gb(1),dt,0);
+  I.backKey=edge('bkk',n(4)||k('Escape')||k('Backspace'),dt,0);
+  I.back=edge('bk',n(97)||n(4)||gb(1)||k('Escape')||k('Backspace'),dt,0);
+  I.start=edge('st',n(108)||n(109)||n(82)||gb(9)||gb(8)||k('Escape')||k('KeyP'),dt,0);
+  I.flash=edge('fl',n(99)||n(100)||gb(2)||gb(3)||k('KeyF'),dt,0);
   I.anyBtn=0;if(gp)for(let i=0;i<gp.buttons.length;i++)if(gp.buttons[i].pressed)I.anyBtn=1;
-  if(I.anyBtn||Object.values(keys).some(v=>v))ensureAudio();
+  if(I.anyBtn)ensureAudio();
 }
 let lastRumble=0;
 function rumble(strong,weak,ms){
@@ -280,7 +294,7 @@ function newGame(){
   buildMap();
   const r=Math.random;const rr=mkRng((Math.random()*1e9)|0);
   obst=[];sprites=[];
-  P={x:3.5,y:3.5,a:.8,stam:100,stamDelay:0,bat:100,flash:true,bob:0,step:0,vx:0,vy:0};
+  P={x:3.5,y:3.5,a:.8,stam:100,stamDelay:0,bat:100,flash:true,bob:0,step:0,vx:0,vy:0,pitch:0,z:0,vz:0,air:false,crouch:false};
   G={key:false,fuel:false,bat:false,notes:0,t:0,msg:'',msgT:0,noteT:0,storm:.3,stormT:0,evT:6,hbT:0,dead:false,deadT:0,won:false,carMsgT:0,prog:0};
   const add=(x,y,k,img,sw,sh,lift,extra)=>sprites.push(Object.assign({x,y,k,img,sw,sh,lift:lift||0,got:false},extra||{}));
   const hk=(i)=>interiorSpot(HOUSES[i],rr);
@@ -334,20 +348,31 @@ function updatePlay(dt){
   G.t+=dt;
   // العاصفة
   G.stormT+=dt;G.storm=.35+.35*Math.sin(G.stormT*.08)+.2*Math.sin(G.stormT*.31);G.storm=clamp(G.storm,0,1);
-  // دوران
-  P.a+=I.lx*dt*2.4*S.sens/10;
+  // نظر حر بعصا يمنى تناظرية (أفقي + عمودي)
+  const cvv=v=>v*(.35+.65*Math.abs(v));
+  P.a+=cvv(I.lx)*dt*3.4*S.sens/10;
+  P.pitch=clamp(P.pitch-cvv(I.ly)*dt*1.9*(S.sensY/10)*(S.inv?-1:1),-.42,.42);
   const dX=Math.cos(P.a),dY=Math.sin(P.a),rX=-dY,rY=dX;
-  let fw=-I.my,st=I.mx;const ml=Math.hypot(fw,st);if(ml>1){fw/=ml;st/=ml}
-  const moving=ml>.05;
-  const sprint=I.sprint&&moving&&P.stam>1&&fw>=0;
-  const sp=sprint?4.2:2.5;
-  const vx=(dX*fw+rX*st)*sp,vy=(dY*fw+rY*st)*sp;
+  // حركة تناظرية: كلما أملت العصا أكثر زادت السرعة
+  let fw=-I.my,st=I.mx;const raw=Math.hypot(fw,st),ml=Math.min(1,raw);
+  const moving=ml>.04;
+  const sprint=!!(I.sprint&&moving&&(S.infStam||P.stam>1));
+  const cm=P.crouch?.5:1;
+  const sp=(sprint?4.8:(.9+1.9*ml))*cm;
+  const nrm=raw||1;
+  const vx=moving?(dX*fw+rX*st)/nrm*sp:0,vy=moving?(dY*fw+rY*st)/nrm*sp:0;
   const nx=P.x+vx*dt,ny=P.y+vy*dt;
   if(free(nx,P.y))P.x=nx;if(free(P.x,ny))P.y=ny;
   P.moving=moving;P.sprinting=sprint;
-  if(sprint){P.stam-=22*dt;P.stamDelay=1.2}else{P.stamDelay-=dt;if(P.stamDelay<=0)P.stam=Math.min(100,P.stam+14*dt)}
+  if(sprint&&!S.infStam){P.stam-=18*dt;P.stamDelay=1.2}else{P.stamDelay-=dt;if(P.stamDelay<=0)P.stam=Math.min(100,P.stam+20*dt)}
   P.stam=clamp(P.stam,0,100);
-  if(moving){P.bob+=dt*(sprint?11:7.5);P.step+=dt*(sprint?4:2.6);if(P.step>=1){P.step=0;SFX.step()}}
+  // قفز وانحناء
+  if(I.ok&&!P.air&&!P.crouch){P.air=true;P.vz=2.4;SFX.step(.6)}
+  if(I.b){if(G.noteT>0){G.noteT=0;$('note').style.display='none'}else P.crouch=!P.crouch}
+  const ground=P.crouch?-.22:0;
+  if(P.air){P.vz-=9*dt;P.z+=P.vz*dt;if(P.z<=ground){P.z=ground;P.vz=0;P.air=false;SFX.step(.8)}}
+  else P.z+=(ground-P.z)*Math.min(1,dt*10);
+  if(moving){P.bob+=dt*sp*1.7;P.step+=dt*sp*.6;if(P.step>=1&&!P.air){P.step=0;SFX.step(clamp(sp/4.8,.25,1))}}
   // مصباح
   if(I.flash){P.flash=!P.flash;SFX.click()}
   if(P.flash){P.bat-=dt*.95;if(P.bat<=0){P.bat=0;P.flash=false;say('انتهت البطارية... الظلام يقترب',4)}}
@@ -385,11 +410,10 @@ function updatePlay(dt){
   if(AC){droneG.gain.value=close*.12;windG.gain.value=.1+G.storm*.28}
   if(G.msgT>0)G.msgT-=dt;
   if(G.noteT>0){G.noteT-=dt;if(G.noteT<=0)$('note').style.display='none'}
-  if(I.back&&G.noteT>0){G.noteT=0;$('note').style.display='none'}
 }
 function updateCreature(dt){
   const c=Cr,dx=P.x-c.x,dy=P.y-c.y,d=Math.hypot(dx,dy);
-  const sees=d<11&&los(c.x,c.y,P.x,P.y);
+  const sees=d<(P.crouch?7:11)&&los(c.x,c.y,P.x,P.y);
   const heard=P.sprinting&&d<9;
   c.fieldT-=dt;
   // الإضاءة عليها
@@ -437,7 +461,7 @@ function lightAt(dist,sx,extra){
 const zb=new Float32Array(2000);
 function render(){
   const bobY=(P&&mode==='play'&&P.moving&&S.bob)?Math.sin(P.bob)*H*.012:0;
-  const hz=H/2+bobY;
+  const hz=H/2+bobY+P.pitch*H*.9,zo=P.z;
   let shx=0,shy=0;
   if(mode==='dead'){shx=(Math.random()-.5)*W*.05;shy=(Math.random()-.5)*H*.05}
   ctx.save();ctx.translate(shx,shy);
@@ -446,11 +470,11 @@ function render(){
   let sx=((P.a-fov/2)/TAU%1+1)%1*sw;
   ctx.drawImage(skyCv,sx,0,Math.min(W,sw-sx),skyCv.height,0,hz-skyCv.height,Math.min(W,sw-sx),skyCv.height);
   if(sx+W>sw)ctx.drawImage(skyCv,0,0,sx+W-sw,skyCv.height,sw-sx,hz-skyCv.height,sx+W-sw,skyCv.height);
-  ctx.fillStyle='#000';if(hz-skyCv.height>0)ctx.fillRect(0,0,W,hz-skyCv.height);
+  ctx.fillStyle='#03050b';if(hz-skyCv.height>0)ctx.fillRect(0,0,W,hz-skyCv.height);
   // غبار الأفق
   ctx.globalAlpha=G.storm*.55;ctx.fillStyle='#4a3320';ctx.fillRect(0,hz-H*.12,W,H*.2);ctx.globalAlpha=1;
   // أرض
-  ctx.save();ctx.translate(0,hz-H/2);ctx.fillStyle=floorGrad;ctx.fillRect(0,H/2,W,H/2+4);ctx.restore();
+  ctx.save();ctx.translate(0,hz-H/2);ctx.fillStyle=floorGrad;ctx.fillRect(0,H/2,W,H*1.6);ctx.restore();
   if(P.flash&&P.bat>0){const rg=ctx.createRadialGradient(W/2,hz+H*.3,2,W/2,hz+H*.3,H*.5);rg.addColorStop(0,'rgba(255,220,150,.28)');rg.addColorStop(1,'rgba(255,220,150,0)');ctx.fillStyle=rg;ctx.fillRect(0,hz,W,H)}
   // جدران
   const dX=Math.cos(P.a),dY=Math.sin(P.a),plX=-dY*FOV_PLANE,plY=dX*FOV_PLANE;
@@ -469,7 +493,7 @@ function render(){
     let pd=side===0?sdx-ddx:sdy-ddy;if(pd<.05)pd=.05;
     zb[x]=pd;
     if(!hit)continue;
-    const lh=Math.min(H/pd,H*6),y0=hz-lh/2;
+    const lh=Math.min(H/pd,H*6),y0=hz-lh/2+zo*lh;
     let wx=side===0?P.y+pd*rdy:P.x+pd*rdx;wx-=Math.floor(wx);
     let tx=(wx*64)|0;if((side===0&&rdx>0)||(side===1&&rdy<0))tx=63-tx;
     ctx.drawImage(TEX[hit],tx,0,1,64,x,y0,1,lh);
@@ -491,7 +515,7 @@ function render(){
     const scx=(W/2)*(1+tx/ty);
     const sh=Math.abs(H/ty)*s.sh,swd=Math.abs(H/ty)*s.sw;
     const lift=(s.lift+(s.glow?Math.sin(t*2+s.x)*.04:0))*H/ty;
-    const bot=hz+(H/ty)*.5-lift,top=bot-sh;
+    const bot=hz+(H/ty)*(.5+zo)-lift,top=bot-sh;
     const x0=Math.floor(scx-swd/2),x1=Math.floor(scx+swd/2);
     const iw=s.img.width,ih=s.img.height;
     let runS=-1;
@@ -557,17 +581,22 @@ const SCREENS={
   main:()=>({title:'ليالينا',sub:'رعب وبقاء في صحراء الأنبار',items:[
     {t:'ابدأ اللعب',f:()=>{setScreen('intro')}},
     {t:'طريقة اللعب',f:()=>{setScreen('help')}},
-    {t:'الإعدادات',f:()=>{prevScr='main';setScreen('settings')}}]}),
+    {t:'الإعدادات',f:()=>{prevScr='main';setScreen('settings')}},
+    ...(window.NativeBridge?[{t:'خروج',f:()=>NativeBridge.exit()}]:[])]}),
   settings:()=>({title:'الإعدادات',items:[
     R('مستوى الصوت','vol',0,10,1,v=>v*10+'%'),
     R('الجرافيكس','gfx',0,3,1,v=>GFXN[v]),
-    R('حساسية الكاميرا','sens',4,20,1,v=>(v/10).toFixed(1)+'×'),
-    R('المنطقة الميتة للعصا','dz',5,40,5,v=>v+'%'),
+    R('حساسية النظر أفقياً','sens',2,30,1,v=>(v/10).toFixed(1)+'×'),
+    R('حساسية النظر عمودياً','sensY',2,30,1,v=>(v/10).toFixed(1)+'×'),
+    R('عكس المحور العمودي','inv',0,1,1,onoff),
+    R('المنطقة الميتة للعصا','dz',0,40,2,v=>v+'%'),
+    R('مجال الرؤية FOV','fov',50,110,5,v=>v+'°'),
     R('اهتزاز الكاميرا أثناء المشي','bob',0,1,1,onoff),
     R('اهتزاز يد التحكم','rumble',0,1,1,onoff),
+    R('ركض غير محدود','infStam',0,1,1,onoff),
     {t:'رجوع',f:()=>{setScreen(prevScr)}}],back:()=>setScreen(prevScr)}),
   help:()=>({title:'طريقة اللعب',body:
-"العصا اليسرى: الحركة     العصا اليمنى / الأسهم: الدوران\nRT / LB / RB / L3: الركض (يستهلك التحمّل)\nX أو Y: تشغيل وإطفاء المصباح     Start: إيقاف مؤقت\nA: تأكيد     B: رجوع / إغلاق الورقة\n\nالمهمة: اعثر على مفتاح السيارة والوقود والبطارية ثم اذهب إلى السيارة\nفي الزاوية الجنوبية الشرقية من القرية.\nالسعلوة تكره الضوء: وجّه المصباح نحوها بثبات لتهرب.\nاجمع بطاريات المصباح، فالظلام أخطر من الصحراء.",
+"العصا اليسرى: حركة حرة (كلما أملتها أكثر زادت السرعة، والاتجاهات كلها)\nالعصا اليمنى: النظر في كل الاتجاهات (أعلى/أسفل/يمين/يسار)\nRT / LT / RB / LB / L3: ركض     A: قفز     B: انحناء (وإغلاق الورقة)\nX أو Y: المصباح     Start أو Menu: إيقاف مؤقت\nD-Pad أو أسهم الريموت: حركة ودوران بسيط     OK: تأكيد\n\nالمهمة: اعثر على مفتاح السيارة والوقود والبطارية ثم اذهب إلى السيارة\nفي الزاوية الجنوبية الشرقية. السعلوة تكره الضوء: وجّه المصباح نحوها بثبات.\nالانحناء يقلل رؤيتها لك. كل الإعدادات (حساسية، FOV، عكس المحور) في قائمة الإعدادات.",
     items:[{t:'رجوع',f:()=>setScreen('main')}],back:()=>setScreen('main')}),
   intro:()=>({title:'القصة',body:
 "في ليلة عاصفة ترابية قرب حدود الأنبار، تعطّلت بك السيارة\nفمشيتَ نحو قرية طينية مهجورة بين النخيل والآبار.\nيقولون إن أهلها هربوا ذات فجر... وإن «السعلوة» ما زالت تتجول بين البيوت.\n\nسيارة قديمة تنتظر في آخر الطريق، لكنها تحتاج مفتاحاً ووقوداً وبطارية.\nلا تُصدر ضجيجاً... ولا تدع الضوء ينطفئ.",
@@ -586,10 +615,10 @@ const SCREENS={
 function setScreen(n){scr=n;sel=0;$('menu').style.display='flex';renderMenu()}
 function renderMenu(){
   const d=SCREENS[scr]();
-  $('mT').textContent=d.title;$('mT').style.fontSize=scr==='main'?'16vh':'8vh';
+  $('mT').textContent=d.title;$('mT').style.fontSize=scr==='main'?'16vh':(d.items.length>6?'6vh':'8vh');
   $('mS').textContent=d.sub||'';$('mS').style.display=d.sub?'block':'none';
   $('mB').textContent=d.body||'';$('mB').style.display=d.body?'block':'none';
-  const ul=$('mL');ul.innerHTML='';
+  const ul=$('mL');ul.innerHTML='';ul.className=d.items.length>6?'dense':'';
   d.items.forEach((it,i)=>{
     const li=document.createElement('li');if(i===sel)li.className='sel';
     const a=document.createElement('span');a.textContent=it.t;li.appendChild(a);
@@ -610,7 +639,7 @@ function updateMenu(){
     if(I.ok){dlt=it.step;if(S[it.k]+dlt>it.max)dlt=it.min-S[it.k]}
     if(dlt){S[it.k]=clamp(S[it.k]+dlt,it.min,it.max);saveS();SFX.menu();ch=true;
       if(it.k==='vol'&&master)master.gain.value=S.vol/10;
-      if(it.k==='gfx')setRes()}
+      if(it.k==='gfx'||it.k==='fov')setRes()}
   }else if(I.ok&&it.f){SFX.menu();it.f();return}
   if(I.back&&curMenu.back){SFX.menu();curMenu.back();return}
   if(ch)renderMenu();
@@ -634,13 +663,13 @@ function updateHud(){
 }
 
 /* ---------- الحلقة الرئيسية ---------- */
-let last=performance.now(),menuAng=0;
+let last=performance.now(),menuAng=0,lastNB=false;
 function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min(.05,(now-last)/1000);last=now;
   poll(dt);
   if(mode==='play'){
-    if(I.start){pause();}
+    if(I.start||I.backKey){pause();}
     else{updatePlay(dt);if(mode==='play')updateHud()}
   }else if(mode==='dead'){
     G.deadT+=dt;if(G.deadT>1.6){mode='menu';setScreen('over')}
@@ -648,7 +677,8 @@ function frame(now){
     menuAng+=dt*.05;P.a=menuAng;G.t+=dt;G.storm=.5;
     P.flash=false;
     updateMenu();
-    $('foot').textContent=gpad?'🎮 يد التحكم متصلة':'اضغط أي زر في يد التحكم للاتصال';
+    if(scr==='main'&&!!window.NativeBridge!==lastNB){lastNB=!!window.NativeBridge;renderMenu()}
+    $('foot').textContent=((gpad||hasNative)?'🎮 ':'')+(lastIn?'آخر إدخال: '+lastIn:'اضغط أي زر في اليد أو الريموت')+' — '+(hasNative?'التقاط أصلي مفعّل':'وضع المتصفح');
   }
   render();
 }
