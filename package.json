@@ -1,0 +1,11 @@
+{
+  "name": "layalina",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ليالينا - لعبة رعب عراقية لأجهزة Android TV",
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  }
+}
