@@ -1,4 +1,4 @@
-# ليالينا 🌙 — لعبة رعب عراقية لـ Android TV
+# أيهم 🌙 — لعبة رعب عراقية لـ Android TV
 
 رعب وبقاء في صحراء الأنبار: قرية طينية مهجورة، نخيل، آبار، عاصفة ترابية، و«السعلوة» تتجول في الظلام.
 
@@ -29,7 +29,7 @@
 3. من **Settings → Actions → General → Workflow permissions** اختر **Read and write permissions**.
 4. من تبويب **Actions** شغّل **Build Layalina APK** (Run workflow) وانتظر ~5–10 دقائق.
 5. بعد النجاح يظهر رابط التحميل المباشر في:
-   `https://github.com/<اسم-حسابك>/layalina/releases/download/latest/Layalina.apk`
+   `https://github.com/<اسم-حسابك>/layalina/releases/download/latest/Ayham.apk`
 
 ## التثبيت على Android TV
 - ثبّت تطبيق **Downloader** على التلفاز، افتحه وأدخل رابط الـAPK أعلاه، ثم ثبّت.

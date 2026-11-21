@@ -1,4 +1,4 @@
-name: Build Layalina APK
+name: Build Ayham APK
 
 on:
   push:
@@ -37,17 +37,17 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk Layalina.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk Ayham.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Layalina-APK
-          path: Layalina.apk
+          name: Ayham-APK
+          path: Ayham.apk
 
       - name: Publish direct download link (Release "latest")
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: ليالينا - آخر نسخة
-          body: "حمّل Layalina.apk وثبّته على Android TV."
-          files: Layalina.apk
+          name: أيهم - آخر نسخة
+          body: "حمّل Ayham.apk وثبّته على Android TV."
+          files: Ayham.apk

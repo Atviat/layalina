@@ -1,5 +1,5 @@
 'use strict';
-/* ====== ليالينا — العالم: خريطة، بيوت، أغراض، أضواء مخبوزة بظلال، ملاحة ====== */
+/* ====== أيهم — العالم: خريطة، بيوت، أغراض، أضواء مخبوزة بظلال، ملاحة ====== */
 const N=48;
 let map,ftype,ceilIn,navB,objs,obstG,lights,lmS,lmF,LR=3,LM=0,lmR,lmG,lmB;
 const HOUSES=[

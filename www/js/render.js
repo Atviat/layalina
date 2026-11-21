@@ -1,5 +1,5 @@
 'use strict';
-/* ====== ليالينا — محرك العرض (Raycasting بكسل-بكسل) مع إضاءة وضباب وظلال مخبوزة ====== */
+/* ====== أيهم — محرك العرض (Raycasting بكسل-بكسل) مع إضاءة وضباب وظلال مخبوزة ====== */
 const GFXW=[320,480,640,960];
 const FOV_BASE=0.66;
 let W=480,H=270,cv,ctx,img,buf,zb,colT,colB,dx2,skyBuf,skyW,skyH,vigCv,grainCv,glowCv={},effRes=1;
@@ -184,6 +184,7 @@ function renderFrame(dt){
     ctx.globalAlpha=clamp(s.ga*(1/(1+s.ty*.12)),0,1);ctx.drawImage(glowCv[gi],s.sx-sz/2,s.sy-sz/2,sz,sz)}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   postFX(dt);
+  if(S.fx>1&&G.mode==='play'){if(!prevCv||prevCv.width!==W){prevCv=document.createElement('canvas');prevCv.width=W;prevCv.height=H;pctx=prevCv.getContext('2d')}pctx.drawImage(cv,0,0)}
 }
 
 /* ---------- جمع الأجسام المرئية ---------- */
@@ -258,8 +259,26 @@ function drawSprite(s,hz,zo,fI,dens,muz){
 }
 
 /* ---------- ما بعد المعالجة والمسدس والتأثيرات السينمائية ---------- */
+let bloomCv=null,bctx=null,prevCv=null,pctx=null,lastCamA=0;const MOTES=[];
 function postFX(dt){
   const fx=S.fx|0;
+  // تمويه حركي خفيف عند الدوران السريع
+  const turn=Math.abs(Math.atan2(Math.sin(CAM.a-lastCamA),Math.cos(CAM.a-lastCamA)));lastCamA=CAM.a;
+  if(fx>1&&prevCv&&prevCv.width===W&&turn>.012&&G.mode==='play'){ctx.globalAlpha=clamp(turn*7,0,.32);ctx.drawImage(prevCv,0,0);ctx.globalAlpha=1}
+  // توهّج (Bloom): نسخة مصغّرة مربّعة القيمة (تُبقي الأجزاء الساطعة فقط) تُضاف فوق الصورة
+  if(fx>0){const bw=W>>2,bh=H>>2;
+    if(!bloomCv||bloomCv.width!==bw){bloomCv=document.createElement('canvas');bloomCv.width=bw;bloomCv.height=bh;bctx=bloomCv.getContext('2d')}
+    bctx.globalCompositeOperation='source-over';bctx.globalAlpha=1;bctx.drawImage(cv,0,0,bw,bh);bctx.globalCompositeOperation='multiply';bctx.drawImage(bloomCv,0,0);
+    ctx.globalCompositeOperation='lighter';ctx.globalAlpha=fx>1?.4:.26;ctx.drawImage(bloomCv,0,0,W,H);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+    // تدرّج لوني سينمائي: ظلال باردة
+    ctx.globalCompositeOperation='soft-light';ctx.fillStyle='rgba(40,85,120,.22)';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over'}
+  // ذرّات غبار تطفو في شعاع الكشاف
+  if(fx>1&&P.flash&&P.bat>0&&!P.hidden){
+    while(MOTES.length<46)MOTES.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*6,vy:(Math.random()-.3)*4,z:.4+Math.random()});
+    ctx.fillStyle='#ffe9b8';
+    for(const m of MOTES){m.x+=m.vx*dt*m.z;m.y+=m.vy*dt*m.z;if(m.x<0)m.x+=W;if(m.x>W)m.x-=W;if(m.y<0)m.y+=H;if(m.y>H)m.y-=H;
+      const tx=(m.x-LT.cx)/LT.rx,ty=(m.y-LT.cy)/LT.ry,t=1-(tx*tx+ty*ty);if(t<=0)continue;ctx.globalAlpha=clamp(t*.7*m.z,0,.8);ctx.fillRect(m.x,m.y,m.z*1.6,m.z*1.6)}
+    ctx.globalAlpha=1}
   // عاصفة رملية: خطوط غبار مدفوعة بالرياح
   if(fx>0){
     const cnt=(fx===1?30:70)+((G.storm*60)|0);ctx.strokeStyle='rgba(205,165,112,'+(.05+G.storm*.12)+')';ctx.lineWidth=1;ctx.beginPath();
@@ -289,7 +308,7 @@ function postFX(dt){
 }
 const GUNM={x:0,y:0,rot:0,kick:0,reload:0,t:0,mx:0,my:0};
 function drawGunVM(dt){
-  const g=ART.gun,s=H/300*1.12*(I.aim?1.08:1);
+  const g=ART.gun,s=H/300*.82*(I.aim?1.08:1);
   const aim=G.aimK||0,bobx=Math.sin(P.bob*.5)*(P.moving?W*.008:W*.002),boby=Math.abs(Math.sin(P.bob*.5))*(P.moving?H*.012:H*.003);
   const sw=G.swayX||0,sy=G.swayY||0;
   const rl=G.gun.reload>0?Math.sin(clamp(1-G.gun.reload/G.gun.reloadMax,0,1)*Math.PI):0;

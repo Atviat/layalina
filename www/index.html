@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>ليالينا</title>
+<title>أيهم</title>
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:"Noto Naskh Arabic","Droid Arabic Naskh","Noto Sans Arabic",Tahoma,sans-serif;color:#eadfc4;user-select:none;-webkit-user-select:none}
 canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;background:#000;image-rendering:auto}
@@ -14,18 +14,34 @@ canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;background:#000;imag
 .bar{height:1.6vh;background:rgba(0,0,0,.55);border:1px solid #6b5a3a;margin:.6vh 0 1.4vh}
 .bar i{display:block;height:100%;width:100%}
 #bBat{background:#e8c04a}#bSta{background:#7fb0d6}
-#msg{position:absolute;bottom:14vh;left:10vw;right:10vw;text-align:center;font-size:3.6vh;line-height:1.5;text-shadow:0 0 8px #000,0 0 4px #000;opacity:0;transition:opacity .4s}
+#msg{position:absolute;bottom:11vh;left:10vw;right:10vw;text-align:center;font-size:3.6vh;line-height:1.5;text-shadow:0 0 8px #000,0 0 4px #000;opacity:0;transition:opacity .4s}
 #note{position:absolute;top:30vh;left:18vw;right:18vw;text-align:center;font-size:4vh;line-height:1.7;background:rgba(15,10,4,.82);border:2px solid #7a6540;padding:3vh 3vw;border-radius:1vh;display:none}
-#menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(0,0,0,.35),rgba(0,0,0,.88));text-align:center}
-#menu h1{font-size:16vh;margin:0;letter-spacing:0;color:#d8c08a;text-shadow:0 0 30px #7a1a10,0 0 8px #000}
-#menu h2{font-size:3.6vh;margin:0 0 4vh;font-weight:400;color:#b9a77d}
-#menu .body{font-size:3.2vh;line-height:1.8;max-width:70vw;margin-bottom:3vh;white-space:pre-line}
-#menu ul{list-style:none;padding:0;margin:0;min-width:42vw}
-#menu li{font-size:4.2vh;padding:1.2vh 3vw;margin:1vh 0;border:2px solid transparent;border-radius:1vh;display:flex;justify-content:space-between;gap:4vw}
-#menu li.sel{border-color:#c9a35a;background:rgba(120,70,20,.35);color:#fff}
-#menu li b{font-weight:400;color:#e8c04a}
-#foot{position:absolute;bottom:3vh;font-size:2.4vh;color:#8d7f5f}
-#menu ul.dense li{font-size:3.1vh;padding:.6vh 3vw;margin:.4vh 0}
+#menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;
+ background:radial-gradient(ellipse at 50% 55%,rgba(0,0,0,.15) 0%,rgba(0,0,0,.72) 55%,rgba(0,0,0,.96) 100%)}
+#menu::before{content:"";position:absolute;inset:-20%;background:
+ radial-gradient(ellipse 40% 18% at 20% 70%,rgba(150,110,70,.16),transparent 70%),
+ radial-gradient(ellipse 50% 20% at 75% 60%,rgba(150,110,70,.13),transparent 70%),
+ radial-gradient(ellipse 35% 15% at 50% 85%,rgba(150,110,70,.18),transparent 70%);animation:fog 22s linear infinite alternate;pointer-events:none}
+#menu::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(#000 0,#000 7vh,transparent 7vh,transparent calc(100% - 7vh),#000 calc(100% - 7vh));
+ box-shadow:inset 0 0 18vh 6vh rgba(0,0,0,.85)}
+@keyframes fog{from{transform:translateX(-6%) scale(1)}to{transform:translateX(6%) scale(1.15)}}
+@keyframes flick{0%,100%{opacity:1}3%{opacity:.35}5%{opacity:1}41%{opacity:1}43%{opacity:.2}45%{opacity:.9}47%{opacity:.4}49%{opacity:1}}
+@keyframes glitch{0%,92%,100%{transform:translate(0,0);filter:none}93%{transform:translate(-1.2vh,.3vh);filter:drop-shadow(.8vh 0 #f00) drop-shadow(-.8vh 0 #0ff)}95%{transform:translate(1.4vh,-.4vh)}97%{transform:translate(-.5vh,0);filter:none}}
+@keyframes breathe{0%,100%{text-shadow:0 0 3vh #7a1010,0 0 .8vh #000}50%{text-shadow:0 0 7vh #b01818,0 0 1.4vh #300}}
+@keyframes eyes{0%,78%,100%{opacity:0}80%{opacity:.95}84%{opacity:0}86%{opacity:.9}95%{opacity:.9}97%{opacity:0}}
+#menu h1{font-size:16vh;margin:0 0 .5vh;font-weight:700;color:#cdb482;position:relative;z-index:2;animation:flick 7s infinite,glitch 9s infinite,breathe 4s ease-in-out infinite}
+#menu h2{font-size:3.2vh;margin:0 0 4.5vh;font-weight:400;color:#9a8664;letter-spacing:.3vh;position:relative;z-index:2}
+#menu .body{font-size:3.1vh;line-height:1.9;max-width:70vw;margin-bottom:3vh;white-space:pre-line;color:#cfc3a4;text-shadow:0 0 1vh #000;position:relative;z-index:2}
+#menu ul{list-style:none;padding:0;margin:0;min-width:36vw;position:relative;z-index:2}
+#menu li{font-size:4vh;padding:1vh 3vw;margin:.6vh 0;border:0;display:flex;justify-content:center;gap:4vw;color:#8a7c60;transition:all .25s;position:relative;letter-spacing:.2vh}
+#menu li::before,#menu li::after{content:"";position:absolute;top:50%;height:1px;width:0;background:linear-gradient(90deg,transparent,#9b1c14);transition:width .3s}
+#menu li::before{right:100%;margin-right:0}#menu li::after{left:100%;transform:scaleX(-1)}
+#menu li.sel{color:#f3e4bd;text-shadow:0 0 2.4vh #a01a10,0 0 .6vh #000;transform:scale(1.07)}
+#menu li.sel::before,#menu li.sel::after{width:9vw}
+#menu li b{font-weight:400;color:#d6a640}
+#eyes{position:absolute;right:11vw;top:38vh;z-index:1;pointer-events:none;animation:eyes 13s infinite}
+#eyes i{display:inline-block;width:1.4vh;height:.5vh;margin:0 .6vh;border-radius:50%;background:#e22;box-shadow:0 0 1.8vh .5vh #a00}
+#menu ul.dense li{font-size:3vh;padding:.5vh 3vw;margin:.3vh 0}
 #flash{position:fixed;inset:0;background:#a00;opacity:0;pointer-events:none}
 
 #obj .tt{color:#d8c08a;font-size:2.4vh;margin-bottom:.4vh}
@@ -33,7 +49,7 @@ canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;background:#000;imag
 #bHp{background:#b03a2e}
 #ammo{position:absolute;bottom:3vh;right:3vw;font-size:5vh;text-shadow:0 0 6px #000;direction:ltr}
 #ammo small{font-size:2.4vh;color:#bba}
-#prompt{position:absolute;bottom:22vh;left:0;right:0;text-align:center;font-size:3.4vh;text-shadow:0 0 8px #000,0 0 3px #000;color:#f1deb0}
+#prompt{position:absolute;bottom:25vh;left:0;right:0;text-align:center;font-size:3.4vh;text-shadow:0 0 8px #000,0 0 3px #000;color:#f1deb0}
 #note b{color:#d8c08a;font-size:4.4vh}
 #note .hint{font-size:2.4vh;color:#8d7f5f;margin-top:1vh}
 #sub{position:fixed;left:8vw;right:8vw;bottom:14vh;text-align:center;font-size:3.6vh;line-height:1.5;text-shadow:0 0 8px #000,0 0 3px #000;opacity:0;transition:opacity .5s;pointer-events:none}
@@ -50,13 +66,15 @@ canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;background:#000;imag
   <div id="note"></div>
 </div>
 <div id="sub"></div>
-<div id="menu"><h1 id="mT"></h1><h2 id="mS"></h2><div class="body" id="mB"></div><ul id="mL"></ul><div id="foot"></div></div>
+<div id="hint"></div>
+<div id="menu"><div id="eyes"><i></i><i></i></div><h1 id="mT"></h1><h2 id="mS"></h2><div class="body" id="mB"></div><ul id="mL"></ul><div id="foot"></div></div>
 <script src="js/core.js"></script>
 <script src="js/art.js"></script>
 <script src="js/world.js"></script>
 <script src="js/render.js"></script>
 <script src="js/game.js"></script>
 <script src="js/cine.js"></script>
+<script src="js/drive.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

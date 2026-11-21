@@ -1,5 +1,5 @@
 'use strict';
-/* ====== ليالينا — المشاهد السينمائية: الافتتاح (القيادة والتعطّل) والنهاية ====== */
+/* ====== أيهم — المشاهد السينمائية: الافتتاح (القيادة والتعطّل) والنهاية ====== */
 let C=null;
 const CINE_OPEN=[
   [1.0,'المذيع (من الراديو): ...وتستمر العاصفة الترابية غرب الأنبار حتى الصباح، ويُنصح بعدم السفر ليلاً...'],
@@ -12,7 +12,7 @@ const CINE_OPEN=[
 const CINE_END=[
   [1.5,'المحرّك يدور من تلقاء نفسه... كأنها تركتني أرحل.'],
   [7.5,'(في المرآة) ...هناك من يقف على الطريق خلفي.'],
-  [13.5,'(همس من الراديو) ...ليالينا...'],
+  [13.5,'(همس من الراديو) ...أيهم...'],
   [18.5,'السجلّ في المقعد المجاور... وأنا أسمع اسمي فيه.']
 ];
 let cineNodes=null;
@@ -147,7 +147,7 @@ function cineDraw(){
   const v=vigCv;ctx.drawImage(v,0,0);
   if(C.kind==='open'&&C.titleT>0){
     const a=clamp(C.titleT/1.2,0,1)*(C.titleT>4?clamp(1-(C.titleT-4)/1.3,0,1):1);ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;
-    ctx.fillStyle='#d8c08a';ctx.textAlign='center';ctx.font='bold '+(H*.2|0)+'px "Noto Naskh Arabic",Tahoma,sans-serif';ctx.fillText('ليالينا',W/2,H*.5);
+    ctx.fillStyle='#d8c08a';ctx.textAlign='center';ctx.font='bold '+(H*.2|0)+'px "Noto Naskh Arabic",Tahoma,sans-serif';ctx.fillText('أيهم',W/2,H*.5);
     ctx.fillStyle='#a08a60';ctx.font=(H*.06|0)+'px "Noto Naskh Arabic",Tahoma,sans-serif';ctx.fillText('الفصل الأول — الطريق الأخير',W/2,H*.64);ctx.globalAlpha=1;ctx.textAlign='start'}
   if(C.kind==='end'&&C.t>19){ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);const a=clamp((C.t-20)/1.2,0,1);ctx.globalAlpha=a;ctx.fillStyle='#d8c08a';ctx.textAlign='center';ctx.font='bold '+(H*.1|0)+'px "Noto Naskh Arabic",Tahoma,sans-serif';ctx.fillText('نهاية الفصل الأول',W/2,H*.48);
     ctx.fillStyle='#a08a60';ctx.font=(H*.05|0)+'px "Noto Naskh Arabic",Tahoma,sans-serif';ctx.fillText('الفصل الثاني: قريباً',W/2,H*.6);ctx.globalAlpha=1;ctx.textAlign='start'}

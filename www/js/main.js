@@ -1,5 +1,5 @@
 'use strict';
-/* ====== ليالينا — الواجهة: قوائم، إعدادات، HUD، الحلقة الرئيسية ====== */
+/* ====== أيهم — الواجهة: قوائم، إعدادات، HUD، الحلقة الرئيسية ====== */
 const hudCache={};
 function setT(id,v,h){if(hudCache[id]!==v){hudCache[id]=v;if(h)$(id).innerHTML=v;else $(id).textContent=v}}
 let mode='menu',scr='main',sel=0,prevScr='main',curMenu=null,inGame=false;
@@ -12,7 +12,7 @@ const gfxApply=()=>{setRes(S.res);bakeLights()};
 const subBack=()=>setScreen('settings');
 const BACK=()=>({t:'رجوع',f:subBack});
 const SCREENS={
-  main:()=>({title:'ليالينا',sub:'رعب وبقاء في صحراء الأنبار — الفصل الأول',items:[
+  main:()=>({title:'أيهم',sub:'رعب وبقاء في صحراء الأنبار — الفصل الأول',items:[
     {t:'ابدأ اللعب',f:()=>setScreen('intro')},
     {t:'طريقة اللعب',f:()=>setScreen('help')},
     {t:'الإعدادات',f:()=>{prevScr='main';setScreen('settings')}},
@@ -52,9 +52,9 @@ const SCREENS={
   help:()=>({title:'طريقة اللعب',body:
 "العصا اليسرى: حركة     العصا اليمنى: نظر     RT: إطلاق النار     LT: تصويب\nX: إعادة التعبئة     Y: الكشاف     A: تفاعل / قفز     B: انحناء / إغلاق الورقة\nLB أو L3: ركض     RB: تبديل المنظور (أول/ثالث)     Start: إيقاف مؤقت\n\nالسعلوة تسمع الركض والطلقات أكثر مما ترى. الانحناء يخفيك، والخزانة تخفيك\nلكنها قد تفتّش عنك. الكشاف المسلّط عليها لثانية ونصف يجعلها تفرّ.\nاجمع الأوراق لتفهم القصة، وابحث عن المفتاح والفيوز والوقود.",
     items:[{t:'رجوع',f:()=>setScreen('main')}],back:()=>setScreen('main')}),
-  intro:()=>({title:'الفصل الأول',sub:'الطريق الأخير',body:
-"ليلة عاصفة ترابية في بادية الأنبار. تقود سيارة أجرة قديمة نحو الرطبة\nوالراديو يحذّر من التوقف قرب القرى المهجورة... ثم يموت المحرك.\n\nقرية طينية، بيوت مقفلة، وأوراق تحكي ما جرى لأهلها.\nلديك مسدس بثماني طلقات وكشاف، وشيء ما يتجوّل بين البيوت.",
-    items:[{t:'انطلق',f:()=>startGame(false)},{t:'ابدأ بلا مشهد افتتاحي',f:()=>startGame(true)},{t:'رجوع',f:()=>setScreen('main')}],back:()=>setScreen('main')}),
+  intro:()=>({title:'الفصل الأول',sub:'أيهم — الطريق الأخير',body:
+"أنتَ أيهم، سائق أجرة من الرمادي. مات أبوك ناجي وترك وصية غريبة:\n«اذهب إلى قرية الغوير وخذ السجلّ، ولا تتأخر».\nتقود بنفسك في ليلة عاصفة ترابية، والراديو يحذّر من القرى المهجورة...\n\nلديك مسدس بثماني طلقات وكشاف، وشيء ما يتجوّل بين البيوت.",
+    items:[{t:'انطلق (قيادة السيارة)',f:()=>startGame(false)},{t:'ابدأ من القرية مباشرة',f:()=>startGame(true)},{t:'رجوع',f:()=>setScreen('main')}],back:()=>setScreen('main')}),
   pause:()=>({title:'إيقاف مؤقت',items:[
     {t:'متابعة',f:()=>resumeGame()},
     {t:'الإعدادات',f:()=>{prevScr='pause';setScreen('settings')}},
@@ -62,7 +62,7 @@ const SCREENS={
   over:()=>({title:'انتهت الليلة',sub:'السعلوة وجدتك...',items:[
     {t:'حاول مجدداً',f:()=>startGame(true)},
     {t:'القائمة الرئيسية',f:()=>setScreen('main')}]}),
-  chapterEnd:()=>({title:'نهاية الفصل الأول',sub:'الفصل الثاني: قريباً',body:'أنجزتَ الهروب... لكن السجلّ ما زال يهمس باسمك.',items:[
+  chapterEnd:()=>({title:'نهاية الفصل الأول',sub:'الفصل الثاني: قريباً',body:'أنجزتَ الهروب... لكن السجلّ يهمس باسمك: أيهم. وهي ما زالت تنتظر.',items:[
     {t:'العب مجدداً',f:()=>setScreen('intro')},
     {t:'القائمة الرئيسية',f:()=>setScreen('main')}]})
 };
@@ -98,7 +98,7 @@ function updateMenu(){
 function startGame(skip){
   ensureAudio();newGame();inGame=true;$('menu').style.display='none';$('note').style.display='none';$('hud').style.display='none';
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
-  if(skip)beginPlay();else cineStart('open');
+  if(skip)beginPlay();else driveStart();
 }
 function beginPlay(){
   mode='play';G.fade=0;G.bars=0;P.flash=true;$('menu').style.display='none';$('hud').style.display='block';
@@ -146,16 +146,29 @@ function frame(now){
     ctx.fillStyle='rgba(120,0,0,'+(.2+Math.random()*.15)+')';ctx.fillRect(0,0,W,H);
     const f=clamp((G.deadT-1.6)/.6,0,1);if(f>0){ctx.fillStyle='rgba(0,0,0,'+f+')';ctx.fillRect(0,0,W,H)}
     if(G.deadT>2.3){inGame=false;setScreen('over')}
+  }else if(mode==='drive'){
+    driveUpdate(dt);if(D)driveDraw(dt);
   }else if(mode==='cine'||mode==='end'){
     cineUpdate(dt);if(C)cineDraw();
   }else{
     G.t+=dt;G.storm=.5;
     if(!inGame){menuAng+=dt*.05;P.a=START_POS.a+Math.sin(menuAng)*1.3;P.flash=false;P.pitch=-.02;updateCamera(dt)}
     compositeLM(.9+.08*Math.sin(G.t*13));
-    updateMenu();renderFrame(dt);
+    updateMenu();menuAmb(dt);renderFrame(dt);
     const cs=(gpad||hasNative)?'🎮 يد التحكم متصلة':'اضغط أي زر في اليد أو الريموت';
     setT('foot',cs+(lastIn?' — آخر إدخال: '+lastIn:''));
   }
+}
+
+/* ---------- أجواء القائمة الرئيسية: رياح وهمسات وعود بعيد ---------- */
+let menuAT=4;
+function menuAmb(dt){
+  if(!AC||inGame)return;
+  windG.gain.setTargetAtTime(.2,AC.currentTime,.5);windBP.frequency.setTargetAtTime(380,AC.currentTime,.5);
+  musicTick(dt,.32,'calm');
+  menuAT-=dt;if(menuAT>0)return;menuAT=5+Math.random()*9;
+  const a=Math.random()*TAU,o=sp(P.x+Math.cos(a)*9,P.y+Math.sin(a)*9),r=Math.random();
+  if(r<.25)SFX.whisper(o);else if(r<.45)SFX.creak(o);else if(r<.6)SFX.growl(o,.5);else if(r<.75)SFX.owl(o);else if(r<.9)SFX.knock(o);else SFX.bark(o);
 }
 
 /* ---------- الإقلاع ---------- */

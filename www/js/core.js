@@ -1,5 +1,5 @@
 'use strict';
-/* ====== ليالينا — النواة: أدوات، إعدادات، صوت مكاني، إدخال ====== */
+/* ====== أيهم — النواة: أدوات، إعدادات، صوت مكاني، إدخال ====== */
 const $=id=>document.getElementById(id);
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -93,7 +93,7 @@ function sp(x,y){
 }
 const SFX={
   stepSand(v,o){v=v||1;noise(.11,480+Math.random()*260,.17*v,'lowpass',o);tone(64,.09,'sine',.1*v,null,o)},
-  stepIndoor(v,o){v=v||1;noise(.06,1400+Math.random()*500,.12*v,'bandpass',o,0,2);tone(95,.1,'sine',.12*v,70,o)},
+  stepIndoor(v,o){v=v||1;noise(.06,1400+Math.random()*500,.12*v,'bandpass',o,0,2);tone(95,.1,'sine',.12*v,70,o);if(Math.random()<.16*v)tone(150+Math.random()*60,.5,'sawtooth',.03*v,210,o,.04)},
   heart(v){tone(56,.16,'sine',v,40);tone(50,.2,'sine',v*.8,38,null,.2)},
   growl(o,v){tone(72,1.2,'sawtooth',v*.34,40,o);noise(1.2,300,v*.5,'lowpass',o);tone(190,.9,'sawtooth',v*.08,120,o,.1)},
   rasp(o,v){noise(.9,1800,v*.14,'bandpass',o,0,1.4);noise(.7,900,v*.1,'bandpass',o,.9,1.2)},
@@ -122,6 +122,12 @@ const SFX={
   hurt(){noise(.25,400,.4,'lowpass');tone(80,.4,'sawtooth',.25,40)},
   breath(v){noise(.7,1500,.09*v,'bandpass',null,0,1.2);noise(.9,1000,.07*v,'bandpass',null,.8,1.2)},
   win(){[523,659,784,1047].forEach((f,i)=>tone(f,.8,'sine',.14,null,null,i*.18))},
+  drip(o){tone(1800,.04,'sine',.1,1200,o);tone(900,.2,'sine',.05,700,o,.06)},
+  scratch(o){for(let i=0;i<6;i++)noise(.05,4200,.09,'highpass',o,i*.08+Math.random()*.03)},
+  clock(o){for(let i=0;i<4;i++){tone(2400,.015,'square',.045,null,o,i*1);tone(1900,.015,'square',.035,null,o,i*1+.5)}},
+  moan(o){tone(92,2.6,'sawtooth',.06,70,o);noise(2.6,380,.05,'lowpass',o);tone(184,2.2,'sine',.03,140,o,.2)},
+  cloth(o){noise(.25,2200,.06,'bandpass',o,0,1)},
+  gust(o){noise(1.6,700,.12,'bandpass',o,0,.8)},
   menu(){tone(520,.08,'sine',.08)},
   start(){tone(55,2.5,'sawtooth',.2,38);noise(2,200,.2,'lowpass')},
   engineDie(){tone(95,1.8,'sawtooth',.25,22);noise(1.5,300,.2,'lowpass')},
